@@ -34,6 +34,8 @@
 
       BluetoothSerial bluetooth;
 
+      #define LED_BUILTIN 2
+
       #define enA 15 // Enable1 L298 Pin enA 
       #define in1 4  // Motor1  L298 Pin in1 
       #define in2 16 // Motor1  L298 Pin in1 
