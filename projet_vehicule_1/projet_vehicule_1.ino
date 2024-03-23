@@ -40,7 +40,7 @@
       #define in1 4  // Motor1  L298 Pin in1 
       #define in2 16 // Motor1  L298 Pin in1 
       #define in3 17 // Motor2  L298 Pin in1 
-      #define in4 15 // Motor2  L298 Pin in1 
+      #define in4 5 // Motor2  L298 Pin in1 
       #define enB 18 // Enable2 L298 Pin enB
       #define R_S 19 // Capteur IR droit
       #define L_S 21 // Capteur IR gauche 
