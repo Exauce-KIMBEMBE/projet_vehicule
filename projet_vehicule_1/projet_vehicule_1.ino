@@ -69,6 +69,7 @@ void Stop(void);
 
 void setup(){
       Serial.begin(115200);
+      Serial.println("using serial monitor");
       // Pin configuration
       pinMode(R_S, INPUT);  // Declare ir sensor as input  
       pinMode(L_S, INPUT);  // Declare ir sensor as input
@@ -108,46 +109,45 @@ void loop(){
                   digitalWrite(LED_BUILTIN, LOW); // Bluetooth OFF
             }
             
-            select_mode();
             ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
       
       #elif __AVR__
             bt_receive();
-            select_mode();
             analogWrite(enA, Speed); // Write The Duty Cycle 0 to 255 Enable Pin A for Motor1 Speed 
             analogWrite(enB, Speed); // Write The Duty Cycle 0 to 255 Enable Pin B for Motor2 Speed 
       #endif 
 
       if(mode==0){     
-      //===============================================================================
-      //                          Key Control Command
-      //=============================================================================== 
-      if(bt_data == 1){forword(); }  // if the bt_data is '1' the DC motor will go forward/Avant
-      else if(bt_data == 2){backword();}  // if the bt_data is '2' the motor will Reverse/Aeeière
-      else if(bt_data == 3){turnLeft();}  // if the bt_data is '3' the motor will turn left/Gauche
-      else if(bt_data == 4){turnRight();} // if the bt_data is '4' the motor will turn right/Droite
-      else if(bt_data == 5){Stop(); }     // if the bt_data '5' the motor will Stop/Stop
+            Serial.println("Key Control Command");
+            //===============================================================================
+            //                          Key Control Command
+            //=============================================================================== 
+            if(bt_data == 1){forword(); }  // if the bt_data is '1' the DC motor will go forward/Avant
+            else if(bt_data == 2){backword();}  // if the bt_data is '2' the motor will Reverse/Aeeière
+            else if(bt_data == 3){turnLeft();}  // if the bt_data is '3' the motor will turn left/Gauche
+            else if(bt_data == 4){turnRight();} // if the bt_data is '4' the motor will turn right/Droite
+            else if(bt_data == 5){Stop(); }     // if the bt_data '5' the motor will Stop/Stop
 
-      //===============================================================================
-      //                          Voice Control Command
-      //===============================================================================    
-      else if(bt_data == 6){turnLeft();  delay(400);  bt_data = 5;}
-      else if(bt_data == 7){turnRight(); delay(400);  bt_data = 5;}
-      }else{    
-     
-      //===============================================================================
-      //                          Line Follower Control/Suivi de ligne
-      //===============================================================================   
-      //if Right Sensor and Left Sensor are at White color then it will call forword function  
-      if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
-      //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
-      if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 0)){turnRight();} 
-      //if Right Sensor is White and Left Sensor is Black then it will call turn Left function
-      if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 1)){turnLeft();} 
-      //if Right Sensor and Left Sensor are at Black color then it will call Stop function
-      if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 1)){Stop();}     
+            //===============================================================================
+            //                          Voice Control Command
+            //===============================================================================    
+            else if(bt_data == 6){turnLeft();  delay(400);  bt_data = 5;}
+            else if(bt_data == 7){turnRight(); delay(400);  bt_data = 5;}
+      }
+      else{    
+            Serial.println("Line Follower Control");
+            //===============================================================================
+            //                          Line Follower Control/Suivi de ligne
+            //===============================================================================   
+            //if Right Sensor and Left Sensor are at White color then it will call forword function  
+            if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
+            //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
+            if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 0)){turnRight();} 
+            //if Right Sensor is White and Left Sensor is Black then it will call turn Left function
+            if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 1)){turnLeft();} 
+            //if Right Sensor and Left Sensor are at Black color then it will call Stop function
+            if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 1)){Stop();}     
       } 
-
       delay(10);
 }
 
@@ -159,7 +159,8 @@ void bt_receive(void){
             Serial.println(bt_data);
             if(bt_data > 20 and bt_data <= 255){
                   Speed = bt_data;
-            }      
+            }     
+            select_mode(); 
       }
 }
 
@@ -192,7 +193,6 @@ void backword(void){ //backword
 }
 
 void turnRight(void){ //turnRight
-
       //digitalWrite(in1, LOW);  //Right Motor forword Pin 
       //digitalWrite(in2, HIGH); //Right Motor backword Pin
       digitalWrite(in1, LOW); //Right Motor forword Pin 
