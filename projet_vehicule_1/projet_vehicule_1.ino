@@ -118,7 +118,6 @@ void loop(){
       #endif 
 
       if(mode==0){     
-            Serial.println("Key Control Command");
             //===============================================================================
             //                          Key Control Command
             //=============================================================================== 
@@ -135,7 +134,6 @@ void loop(){
             else if(bt_data == 7){turnRight(); delay(400);  bt_data = 5;}
       }
       else{    
-            Serial.println("Line Follower Control");
             //===============================================================================
             //                          Line Follower Control/Suivi de ligne
             //===============================================================================   
@@ -167,12 +165,14 @@ void bt_receive(void){
 void select_mode(void){
       // Auto Line Follower Command
       if(bt_data == 8){
+            Serial.println("Auto Line Follower Command");
             mode=1; 
             Speed=130;
       }   
 
       //Manual Android Application Control Command
       else if(bt_data == 9){
+            Serial.println("Manual Android Application Control Command");
             mode=0; 
             Stop();
       } 
