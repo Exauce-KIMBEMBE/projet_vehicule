@@ -68,6 +68,7 @@ void turnLeft(void);
 void Stop(void);
 
 void setup(){
+      Serial.begin(115200);
       // Pin configuration
       pinMode(R_S, INPUT);  // Declare ir sensor as input  
       pinMode(L_S, INPUT);  // Declare ir sensor as input
@@ -155,7 +156,7 @@ void bt_receive(void){
       if(bluetooth.available()){  
             String data = bluetooth.readString();
             bt_data = data.toInt(); 
-
+            Serial.Println(bt_data);
             if(bt_data > 20 and bt_data <= 255){
                   Speed = bt_data;
             }      
