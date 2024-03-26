@@ -156,7 +156,7 @@ void bt_receive(void){
       if(bluetooth.available()){  
             String data = bluetooth.readString();
             bt_data = data.toInt(); 
-            Serial.Println(bt_data);
+            Serial.println(bt_data);
             if(bt_data > 20 and bt_data <= 255){
                   Speed = bt_data;
             }      
