@@ -151,13 +151,9 @@ void loop(){
 
 
 void bt_receive(void){
-      if(bluetooth.available()){  
-            String data = bluetooth.readString();
-            bt_data = data.toInt(); 
-            Serial.println(bt_data);
-            if(bt_data > 20 and bt_data <= 255){
-                  Speed = bt_data;
-            }     
+      if(bluetooth.available()){   
+            bt_data = bluetooth.read();
+            Serial.println(bt_data);    
             select_mode(); 
       }
 }
@@ -193,19 +189,15 @@ void backword(void){ //backword
 }
 
 void turnRight(void){ //turnRight
-      //digitalWrite(in1, LOW);  //Right Motor forword Pin 
-      //digitalWrite(in2, HIGH); //Right Motor backword Pin
-      digitalWrite(in1, LOW); //Right Motor forword Pin 
-      digitalWrite(in2, LOW); //Right Motor backword Pin   
+      digitalWrite(in1, LOW);  //Right Motor forword Pin 
+      digitalWrite(in2, LOW);  //Right Motor backword Pin   
       digitalWrite(in3, LOW);  //Left Motor backword Pin 
       digitalWrite(in4, HIGH); //Left Motor forword Pin 
 }
 
 void turnLeft(void){ //turnLeft
-      digitalWrite(in1, HIGH); //Right Motor forword Pin 
-      digitalWrite(in2, LOW);  //Right Motor backword Pin 
-      //digitalWrite(in3, HIGH); //Left Motor backword Pin 
-      //digitalWrite(in4, LOW);  //Left Motor forword Pin
+      digitalWrite(in1, HIGH);//Right Motor forword Pin 
+      digitalWrite(in2, LOW); //Right Motor backword Pin 
       digitalWrite(in3, LOW); //Left Motor backword Pin 
       digitalWrite(in4, LOW); //Left Motor forword Pin  
 }
