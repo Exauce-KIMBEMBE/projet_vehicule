@@ -55,7 +55,7 @@
 #endif
 
 int bt_data;    // variable to receive data from the serial port
-int Speed = 50; // The motor speed ranges from 0 to 255.  
+int Speed = 100; // The motor speed ranges from 0 to 255.  
 int mode  = 0;
 
 // Function prototypes
