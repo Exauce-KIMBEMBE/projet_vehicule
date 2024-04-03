@@ -16,6 +16,7 @@
 #define WIFI true 
 
 #ifdef __AVR__ 
+      #define WIFI false
       #include <SoftwareSerial.h>
 
       SoftwareSerial bluetooth(2, 3); // RX, TX
@@ -29,10 +30,7 @@
       #define R_S A0 // Capteur IR droit
       #define L_S A1 // Capteur IR gauche 
 
-      int bt_data;    // variable to receive data from the serial port
-#endif
-
-#ifdef ESP32
+#elif ESP32
       #if WIFI == false
             #include <BluetoothSerial.h>
 
@@ -42,34 +40,28 @@
 
             BluetoothSerial bluetooth;
 
-            int bt_data;    // variable to receive data from the serial port
-            int mode  = 0;
-
             void bt_receive(void);
             void select_mode(void);
 
       #else
             #include <WiFi.h>
 
-            // Replace here with your WiFi SSID and password
-            // WiFi access point to connect to
-            const char* ssid     = "Nom_du_reseau_STA";
-            const char* password = "Mot_de_passe_STA";
-
             // WiFi Access Point created
-            const char* ssid_ap     = "Nom_du_reseau_AP"; // WiFi network name
-            const char* password_ap = "Mot_de_passe_AP";  // WiFi network password
+            const char* ssid_ap     = "WIFI_CAR"; // WiFi network name
+            const char* password_ap = "MON_PROJET_2024";  // WiFi network password
 
+            WiFiServer server(80);
+
+            // Function prototypes
             void WifiConnection(void);
+            void WiFireceive(void);
       #endif
 
-      #define LED_BUILTIN 2
-
       #define enA 15 // Enable1 L298 Pin enA 
-      #define in1 4  // Motor1  L298 Pin in1 
+      #define in1 12 // Motor1  L298 Pin in1 
       #define in2 16 // Motor1  L298 Pin in1 
       #define in3 17 // Motor2  L298 Pin in1 
-      #define in4 5 // Motor2  L298 Pin in1 
+      #define in4 5  // Motor2  L298 Pin in1 
       #define enB 18 // Enable2 L298 Pin enB
       #define R_S 19 // Capteur IR droit
       #define L_S 21 // Capteur IR gauche 
@@ -81,6 +73,8 @@
 #endif
 
 int Speed = 100; // The motor speed ranges from 0 to 255.  
+int recv_data;    // variable to receive data 
+int mode  = 0;
 
 // Function prototypes
 void forword(void);
@@ -103,14 +97,10 @@ void setup(){
       pinMode(enB, OUTPUT); // Declare as output for L298 Pin enB 
 
       #ifdef ESP32
-            //Declare the pin associated with the ESP32 LED as an output and will indicate the Bluetooth state. 
-            pinMode(LED_BUILTIN, OUTPUT);  
-            digitalWrite(LED_BUILTIN, LOW);
-
             #if WIFI == false
                   bluetooth.begin("MY_CAR"); // Bluetooth name
             #else
-                  WifiConnection(); // WiFi connection
+                  WifiConnection();   // WiFi connection
             #endif
 
             // PWM Channel Initialization
@@ -129,11 +119,7 @@ void loop(){
       #if WIFI == false
             #ifdef ESP32
                   if(bluetooth.connected()==true){
-                        digitalWrite(LED_BUILTIN, HIGH); // Bluetooth ON
                         bt_receive();
-                  }
-                  else{
-                        digitalWrite(LED_BUILTIN, LOW); // Bluetooth OFF
                   }
                         
                   ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
@@ -142,65 +128,99 @@ void loop(){
                   analogWrite(enA, Speed); // Write The Duty Cycle 0 to 255 Enable Pin A for Motor1 Speed 
                   analogWrite(enB, Speed); // Write The Duty Cycle 0 to 255 Enable Pin B for Motor2 Speed 
             #endif 
-
-            if(mode==0){     
-                  //===============================================================================
-                  //                          Key Control Command
-                  //=============================================================================== 
-                  if(bt_data == 1){forword(); }  // if the bt_data is '1' the DC motor will go forward/Avant
-                  else if(bt_data == 2){backword();}  // if the bt_data is '2' the motor will Reverse/Aeeière
-                  else if(bt_data == 3){turnLeft();}  // if the bt_data is '3' the motor will turn left/Gauche
-                  else if(bt_data == 4){turnRight();} // if the bt_data is '4' the motor will turn right/Droite
-                  else if(bt_data == 5){Stop(); }     // if the bt_data '5' the motor will Stop/Stop
-
-                  //===============================================================================
-                  //                          Voice Control Command
-                  //===============================================================================    
-                  else if(bt_data == 6){turnLeft();  delay(400);  bt_data = 5;}
-                  else if(bt_data == 7){turnRight(); delay(400);  bt_data = 5;}
-            }
-            else{    
-                  //===============================================================================
-                  //                          Line Follower Control/Suivi de ligne
-                  //===============================================================================   
-                  //if Right Sensor and Left Sensor are at White color then it will call forword function  
-                  if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
-                  //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
-                  if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 0)){turnRight();} 
-                  //if Right Sensor is White and Left Sensor is Black then it will call turn Left function
-                  if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 1)){turnLeft();} 
-                  //if Right Sensor and Left Sensor are at Black color then it will call Stop function
-                  if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 1)){Stop();}     
-            } 
+      #else
+            WiFireceive();
+            ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
       #endif
+
+      if(mode==0){     
+            //===============================================================================
+            //                          Key Control Command
+            //=============================================================================== 
+            if(recv_data == 1){forword(); }  // if the recv_data is '1' the DC motor will go forward/Avant
+            else if(recv_data == 2){backword();}  // if the recv_data is '2' the motor will Reverse/Aeeière
+            else if(recv_data == 3){turnLeft();}  // if the recv_data is '3' the motor will turn left/Gauche
+            else if(recv_data == 4){turnRight();} // if the recv_data is '4' the motor will turn right/Droite
+            else if(recv_data == 5){Stop(); }     // if the recv_data '5' the motor will Stop/Stop
+
+            //===============================================================================
+            //                          Voice Control Command
+            //===============================================================================    
+            else if(recv_data == 6){turnLeft();  delay(400);  recv_data = 5;}
+            else if(recv_data == 7){turnRight(); delay(400);  recv_data = 5;}
+      }
+      else{    
+            //===============================================================================
+            //                          Line Follower Control/Suivi de ligne
+            //===============================================================================   
+            //if Right Sensor and Left Sensor are at White color then it will call forword function  
+            if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
+            //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
+            if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 0)){turnRight();} 
+            //if Right Sensor is White and Left Sensor is Black then it will call turn Left function
+            if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 1)){turnLeft();} 
+            //if Right Sensor and Left Sensor are at Black color then it will call Stop function
+            if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 1)){Stop();}     
+      } 
       delay(10);
 }
 
 #if WIFI == false
       void bt_receive(void){
             if(bluetooth.available()){   
-                  bt_data = bluetooth.read();
-                  Serial.println(bt_data);    
+                  recv_data = bluetooth.read();
+                  Serial.println(recv_data);    
                   select_mode(); 
             }
       }
 
-      void select_mode(void){
-            // Auto Line Follower Command
-            if(bt_data == 8){
-                  Serial.println("Auto Line Follower Command");
-                  mode=1; 
-                  Speed=130;
-            }   
+#else 
+      void WifiConnection(void){
+            // Configuration du mode AP (Point d'Accès)
+            Serial.println("Configuration du point d'accès WiFi en mode AP : ");
+            WiFi.softAP(ssid_ap, password_ap);
+            Serial.println("Point d'accès WiFi en mode AP configuré");
+            Serial.print("Adresse IP AP: http://");
+            Serial.println(WiFi.softAPIP());
+            Serial.print("Adresse MAC AP: ");
+            Serial.println(WiFi.softAPmacAddress());
+            server.begin();
+      }
 
-            //Manual Android Application Control Command
-            else if(bt_data == 9){
-                  Serial.println("Manual Android Application Control Command");
-                  mode=0; 
-                  Stop();
-            } 
+      void WiFireceive(void){
+            WiFiClient client = server.available();
+            if(client) { 
+                  if (client.connected()) {
+                        if (client.available()) {
+                              recv_data = client.parseInt();
+                              Serial.println(recv_data);
+                              select_mode();
+                        }
+                        delay(10);
+                  }
+                 
+                  client.flush();
+                  client.stop();
+            }
       }
 #endif
+
+
+void select_mode(void){
+      // Auto Line Follower Command
+      if(recv_data == 8){
+            Serial.println("Auto Line Follower Command");
+            mode=1; 
+            Speed=130;
+      }   
+
+      //Manual Android Application Control Command
+      else if(recv_data == 9){
+            Serial.println("Manual Android Application Control Command");
+            mode=0; 
+            Stop();
+      } 
+}
 
 void forword(void){  //forword
       digitalWrite(in1, HIGH); //Right Motor forword Pin 
@@ -236,42 +256,3 @@ void Stop(void){ //stop
       digitalWrite(in3, LOW); //Left Motor backword Pin 
       digitalWrite(in4, LOW); //Left Motor forword Pin 
 }
-
-#if WIFI == true
-      void WifiConnection(void){
-            // Configuration du mode STA (Station)
-            WiFi.mode(WIFI_STA);
-            WiFi.begin(ssid, password);
-            Serial.print("En cours de connexion au réseau WiFi en mode STA : ");
-            int i=0;
-            
-            while (WiFi.status() != WL_CONNECTED){
-                  ++i;
-                  delay(1000);
-                  Serial.print(".");
-                  
-                  if (i==5)
-                        break;// Fin boucle
-            }
-
-            if (WiFi.status() == WL_CONNECTED){
-                  Serial.println("\nConnecté au WiFi avec succès en mode STA !");
-                  Serial.print("Adresse IP STA: http://");
-                  Serial.println(WiFi.localIP());
-                  Serial.print("Adresse MAC STA: ");
-                  Serial.println(WiFi.macAddress());
-            }
-            else{
-                  Serial.println("\nNon Connecté au WiFi en mode STA !");
-            }
-
-            // Configuration du mode AP (Point d'Accès)
-            Serial.println("Configuration du point d'accès WiFi en mode AP : ");
-            WiFi.softAP(ssid_ap, password_ap);
-            Serial.println("Point d'accès WiFi en mode AP configuré");
-            Serial.print("Adresse IP AP: http://");
-            Serial.println(WiFi.softAPIP());
-            Serial.print("Adresse MAC AP: ");
-            Serial.println(WiFi.softAPmacAddress());
-      }
-#endif
