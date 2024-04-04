@@ -178,6 +178,7 @@ void loop(){
       void WifiConnection(void){
             // Configuration du mode AP (Point d'Accès)
             Serial.println("Configuration du point d'accès WiFi en mode AP : ");
+            WiFi.mode(WIFI_AP);
             WiFi.softAP(ssid_ap, password_ap);
             Serial.println("Point d'accès WiFi en mode AP configuré");
             Serial.print("Adresse IP AP: http://");
