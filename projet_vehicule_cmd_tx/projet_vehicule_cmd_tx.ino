@@ -13,21 +13,25 @@
 #define LED_B 23  // Indicates reverse motion
 
 // Constantes
-#define DEFAULT_RX 1967
-#define DEFAULT_RY 1967
-#define IT         500
+#define DEFAULT     50
+#define IT          20
 
-#define FORWARD  
-#define BACKWARD
-#define RIGHT
-#define LEFT
+#define FORWARD     1
+#define BACKWARD    2
+#define LEFT        3 
+#define RIGHT       4 
+#define STOP        5
+#define AUTO_MODE   8
+#define MANUEL_MODE 9
 
 
 const char* ssid     = "WIFI_CAR"; // WiFi network name
 const char* password = "MON_PROJET_2024";  // WiFi network password
 // Replace with the MAC address of the WiFi access point
-uint8_t mac[] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC}; 
+uint8_t mac[] = {0xA0, 0xB7, 0x65, 0x56, 0xD0, 0xE5}; 
 const int serverPort = 80;
+
+WiFiClient client;
 
 void setup() {
   Serial.begin(115200);
@@ -42,6 +46,7 @@ void setup() {
 
   // Connecting to the WiFi network with the specified MAC address
   Serial.println("Connecting to the WiFi network...");
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid,password); 
   WiFi.macAddress(mac); // Use the specified MAC address
 
@@ -64,20 +69,17 @@ void setup() {
 void loop() {
 
   if (WiFi.status() == WL_CONNECTED) {
-    
-    WiFiClient client;
 
-    if (client.connect(mac, serverPort)) {
-      for (int i = 0; i < 10; i++) {
-        client.println(i);
-        delay(1000);
-      }
+    if (client.connect(mac, serverPort)){
+      sendData();
       client.stop();
       Serial.println("Données envoyées avec succès");
     } 
     else {
       Serial.println("Impossible de se connecter au serveur");
     }
+
+    delay(100);
   } 
   else {
     Serial.println("Connexion WiFi perdue, réessayer...");
@@ -88,8 +90,40 @@ void loop() {
 
 
 void sendData(void){
+  int rx_value = map(analogRead(RX),0,4096,0,100); // Avance
+  int ry_value = map(analogRead(RY),0,4096,0,100); // Virage
 
-  if(){
-    
+  // STOP
+  if((rx_value >=(DEFAULT-IT) and rx_value <=(DEFAULT+IT)) and (ry_value >=(DEFAULT-IT) and ry_value <=(DEFAULT+IT))){
+    client.println(STOP);
+    digitalWrite(LED_F,LOW);
+    digitalWrite(LED_B,LOW);
+    digitalWrite(LED_L,LOW);
+    digitalWrite(LED_R,LOW);
+    Serial.println(STOP);
+  }
+  // FORWARD
+  else if(rx_value >(DEFAULT+IT)){
+    client.println(FORWARD);
+    digitalWrite(LED_F,HIGH);
+    Serial.println(FORWARD);
+  }
+  // BACKWARD
+  else if(rx_value < (DEFAULT-IT)){
+    client.println(BACKWARD);
+    digitalWrite(LED_B,HIGH);
+    Serial.println(BACKWARD);
+  }
+  // LEFT
+  else if(ry_value <(DEFAULT-IT)){
+    client.println(LEFT);
+    digitalWrite(LED_L,HIGH);
+    Serial.println(LEFT);
+  }
+  // RIGHT
+  else if(ry_value > (DEFAULT+IT)){
+    client.println(RIGHT);
+    digitalWrite(LED_R,HIGH);
+    Serial.println(RIGHT);
   }
 }
