@@ -13,8 +13,14 @@
 #define LED_B 23  // Indicates reverse motion
 
 // Constantes
-#define DEFAULT_RX 525
-#define DEFAULT_RY 525
+#define DEFAULT_RX 1967
+#define DEFAULT_RY 1967
+#define IT         500
+
+#define FORWARD  
+#define BACKWARD
+#define RIGHT
+#define LEFT
 
 
 const char* ssid     = "WIFI_CAR"; // WiFi network name
@@ -78,5 +84,12 @@ void loop() {
     delay(3000);
     ESP.restart();
   }
+}
 
+
+void sendData(void){
+
+  if(){
+    
+  }
 }
