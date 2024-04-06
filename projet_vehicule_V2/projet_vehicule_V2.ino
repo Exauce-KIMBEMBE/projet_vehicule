@@ -9,7 +9,7 @@
  * This program has been implemented on the Arduino and ESP32 boards. 
  * The program is designed to create a vehicle equipped with an automatic 
  * mode (line follower) and a manual mode (controlled via Bluetooth).
- * 
+ * @@@ The Wi-Fi option is only available on the ESP32 board.
  */
 
 // Set the WiFi constant to false to use Bluetooth and true for WiFi.
@@ -40,6 +40,7 @@
 
             BluetoothSerial bluetooth;
 
+            // Function prototypes
             void bt_receive(void);
             void select_mode(void);
 
