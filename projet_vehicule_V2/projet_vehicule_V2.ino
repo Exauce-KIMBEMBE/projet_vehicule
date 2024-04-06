@@ -50,6 +50,10 @@
             const char* ssid_ap     = "WIFI_CAR"; // WiFi network name
             const char* password_ap = "MON_PROJET_2024";  // WiFi network password
 
+            IPAddress local_IP(192, 168, 4, 1); // Static IP address for the WiFi AP
+            IPAddress gateway(192, 168, 4, 1);  // Default gateway IP address
+            IPAddress subnet(255, 255, 255, 0); // Subnet mask
+
             WiFiServer server(80);
 
             // Function prototypes
@@ -73,7 +77,7 @@
 #endif
 
 int Speed = 100; // The motor speed ranges from 0 to 255.  
-int recv_data;    // variable to receive data 
+int recv_data;   // variable to receive data 
 int mode  = 0;
 
 // Function prototypes
@@ -179,13 +183,14 @@ void loop(){
             // Configuration du mode AP (Point d'Accès)
             Serial.println("Configuration du point d'accès WiFi en mode AP : ");
             WiFi.mode(WIFI_AP);
+            WiFi.softAPConfig(local_IP, gateway, subnet);
             WiFi.softAP(ssid_ap, password_ap);
             Serial.println("Point d'accès WiFi en mode AP configuré");
             Serial.print("Adresse IP AP: http://");
             Serial.println(WiFi.softAPIP());
             Serial.print("Adresse MAC AP: ");
             Serial.println(WiFi.softAPmacAddress());
-            server.begin(80);
+            server.begin();
       }
 
       void WiFireceive(void){
