@@ -18,6 +18,10 @@
  * 
  */
 
+#ifndef ESP32
+	#error "This code has been tested on an ESP32 board."
+#endif
+
 #include <WiFi.h>
 #include <LiquidCrystal_I2C.h>
 
