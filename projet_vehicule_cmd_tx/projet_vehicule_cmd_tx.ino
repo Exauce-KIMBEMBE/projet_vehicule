@@ -33,7 +33,7 @@
 #define LED_L 14  // Indicates left turn
 #define LED_F 18  // Indicates forward motion 
 #define LED_B 23  // Indicates reverse motion
-#define LED_S 23  // Indicates the state of wifi
+#define LED_S 12  // Indicates the state of wifi
 // Pins used by the buttons
 #define BTN_MANUEL   19 // Manual control button
 #define BTN_AUTO     12 // Line follower control button
