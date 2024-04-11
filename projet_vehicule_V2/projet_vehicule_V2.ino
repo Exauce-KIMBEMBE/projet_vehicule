@@ -13,7 +13,17 @@
  */
 
 // Set the WiFi constant to false to use Bluetooth and true for WiFi.
-#define WIFI true 
+#define WIFI false 
+
+#include <Wire.h>
+#include "rgb_lcd.h"
+
+rgb_lcd lcd;
+
+#define colorR  255
+#define colorG    0
+#define colorB    0
+
 
 #ifdef __AVR__ 
       #define WIFI false
@@ -61,7 +71,8 @@
             void WifiConnection(void);
             void WiFireceive(void);
       #endif
-
+      
+      #define LED_TEMOIN 2 // Indicates the connectivity status
       #define enA 15 // Enable1 L298 Pin enA 
       #define in1 12 // Motor1  L298 Pin in1 
       #define in2 16 // Motor1  L298 Pin in1 
@@ -91,6 +102,11 @@ void Stop(void);
 void setup(){
       Serial.begin(115200);
       Serial.println("using serial monitor");
+
+      // Configuration of the Grove I2C LCD screen
+      lcd.begin(16, 2);
+      lcd.setRGB(colorR, colorG, colorB);
+ 
       // Pin configuration
       pinMode(R_S, INPUT);  // Declare ir sensor as input  
       pinMode(L_S, INPUT);  // Declare ir sensor as input
@@ -107,7 +123,7 @@ void setup(){
             #else
                   WifiConnection();   // WiFi connection
             #endif
-
+            pinMode(LED_TEMOIN, OUTPUT); 
             // PWM Channel Initialization
             // It's possible to connect multiple pins to the same PWM channel on the ESP32.
             ledcSetup(CHANNEL, FREQ, RESOLUTION); // Configure the PWM channel
@@ -124,7 +140,11 @@ void loop(){
       #if WIFI == false
             #ifdef ESP32
                   if(bluetooth.connected()==true){
+                        digitalWrite(LED_TEMOIN,HIGH); // States on
                         bt_receive();
+                  }
+                  else{
+                        digitalWrite(LED_TEMOIN,LOW); // States off
                   }
                         
                   ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
@@ -142,22 +162,27 @@ void loop(){
             //===============================================================================
             //                          Key Control Command
             //=============================================================================== 
-            if(recv_data == 1){forword(); }  // if the recv_data is '1' the DC motor will go forward/Avant
-            else if(recv_data == 2){backword();}  // if the recv_data is '2' the motor will Reverse/Aeeière
-            else if(recv_data == 3){turnLeft();}  // if the recv_data is '3' the motor will turn left/Gauche
-            else if(recv_data == 4){turnRight();} // if the recv_data is '4' the motor will turn right/Droite
-            else if(recv_data == 5){Stop(); }     // if the recv_data '5' the motor will Stop/Stop
+            
+            lcd.setCursor(0, 1);   
+            lcd.print("Commande Manuel ");
+            lcd.setCursor(0, 1);
 
-            //===============================================================================
-            //                          Voice Control Command
-            //===============================================================================    
-            else if(recv_data == 6){turnLeft();  delay(400);  recv_data = 5;}
-            else if(recv_data == 7){turnRight(); delay(400);  recv_data = 5;}
+            if(recv_data == 1){forword(); lcd.print("     AVANCE     ");}  // if the recv_data is '1' the DC motor will go forward/Avant
+            else if(recv_data == 2){backword(); lcd.print("     ARRIERE    ");}  // if the recv_data is '2' the motor will Reverse/Aeeière
+            else if(recv_data == 3){turnLeft(); lcd.print("TOURNER A GAUCHE");}  // if the recv_data is '3' the motor will turn left/Gauche
+            else if(recv_data == 4){turnRight();lcd.print("TOURNER A DROITE");} // if the recv_data is '4' the motor will turn right/Droite
+            else if(recv_data == 5){Stop(); lcd.print("      STOP      ");}     // if the recv_data '5' the motor will Stop/Stop
       }
       else{    
             //===============================================================================
             //                          Line Follower Control/Suivi de ligne
             //===============================================================================   
+            
+            lcd.setCursor(0, 1);   
+            lcd.print(" SUIVRE LA LIGNE ");
+            lcd.setCursor(0, 1);   
+            lcd.print("VITESSE : "+String(Speed)+"         ");
+
             //if Right Sensor and Left Sensor are at White color then it will call forword function  
             if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
             //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
@@ -197,6 +222,7 @@ void loop(){
       void WiFireceive(void){
             WiFiClient client = server.available();
             if(client) { 
+                  digitalWrite(LED_TEMOIN,HIGH); // States on
                   if (client.connected()) {
                         if (client.available()) {
                               recv_data = client.parseInt();
@@ -208,6 +234,9 @@ void loop(){
                  
                   client.flush();
                   client.stop();
+            }
+            else{
+                  digitalWrite(LED_TEMOIN,LOW); // States off
             }
       }
 #endif
