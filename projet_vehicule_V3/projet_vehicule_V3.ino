@@ -156,7 +156,7 @@ void loop(){
             lcd.setCursor(0, 1);   
             lcd.print("VITESSE : "+String(Speed)+"         ");
 
-            Serial.println("IR droite = " + digitalRead(R_S) + "IR gauche = " + digitalRead(L_S));
+            Serial.println("IR droite = " + String(digitalRead(R_S)) + "  IR gauche = " + String(digitalRead(L_S)));
                   
             // si le capteur droit et le capteur gauche sont blancs, on appelle la fonction forword
             if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
