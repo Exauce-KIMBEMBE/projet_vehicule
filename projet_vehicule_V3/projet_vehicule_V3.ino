@@ -57,13 +57,13 @@ rgb_lcd lcd;
       
 #define LED_TEMOIN 2 // Indicates the connectivity status
 #define enA 15 // Enable1 L298 Pin enA 
-#define in1 12 // Motor1  L298 Pin in1 
+#define in1 4  // Motor1  L298 Pin in1 
 #define in2 16 // Motor1  L298 Pin in1 
 #define in3 17 // Motor2  L298 Pin in1 
 #define in4 5  // Motor2  L298 Pin in1 
 #define enB 18 // Enable2 L298 Pin enB
-#define R_S 19 // Capteur IR droit
-#define L_S 21 // Capteur IR gauche 
+#define R_S 32 // Capteur IR droit
+#define L_S 33 // Capteur IR gauche 
 
 // PWM Parameter
 #define FREQ        1000 // Channel frequency in Hz
@@ -114,7 +114,6 @@ void setup(){
             ledcAttachPin(enB, CHANNEL); // Attach the pin to the PWM channel
       #endif
 }
-
 
 void loop(){  
       #if WIFI == false
@@ -213,7 +212,6 @@ void loop(){
             }
       }
 #endif
-
 
 void select_mode(void){
       // Auto Line Follower Command
