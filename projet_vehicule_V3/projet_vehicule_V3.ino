@@ -2,17 +2,17 @@
  * e-mail  : openprogramming23@gmail.com
  * Date    : 11/04/2024
  * Auteurs : @Exaucé KIMBEMBE / OpenProgramming
- *           @Write your name
+ *           @Ecrivez votre nom
  *  
- * @Board : ESP32
+ * @Carte : ESP32
  * 
- * This program has been implemented on the ESP32 boards. 
- * The program is designed to create a vehicle equipped with an automatic 
- * mode (line follower) and a manual mode (controlled via Bluetooth).
- * @@@ The Wi-Fi option is only available on the ESP32 board.
+ * Ce programme a été implémenté sur les cartes ESP32. 
+ * Le programme est conçu pour créer un véhicule équipé d'un mode automatique 
+ * (suiveur de ligne) et d'un mode manuel (contrôlé via Bluetooth).
+ *
  */
 
-// Set the WiFi constant to false to use Bluetooth and true for WiFi.
+// Définissez la constante WiFi sur false pour utiliser le Bluetooth et true pour le WiFi.
 #define WIFI false 
 
 #include <Wire.h>
@@ -28,53 +28,53 @@ rgb_lcd lcd;
       #include <BluetoothSerial.h>
 
       #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-            #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+            #error Le Bluetooth n'est pas activé ! Veuillez exécuter `make menuconfig` pour l'activer
       #endif
 
       BluetoothSerial bluetooth;
 
-      // Function prototypes
+      // Prototypes de fonctions
       void bt_receive(void);
-      void select_mode(void);
 
 #else
       #include <WiFi.h>
 
-      // WiFi Access Point created
-      const char* ssid_ap     = "WIFI_CAR"; // WiFi network name
-      const char* password_ap = "MON_PROJET_2024";  // WiFi network password
+      // Point d'accès WiFi créé
+      const char* ssid_ap     = "WIFI_CAR"; // Nom du réseau WiFi
+      const char* password_ap = "MON_PROJET_2024";  // Mot de passe du réseau WiFi
 
-      IPAddress local_IP(192, 168, 4, 1); // Static IP address for the WiFi AP
-      IPAddress gateway(192, 168, 4, 1);  // Default gateway IP address
-      IPAddress subnet(255, 255, 255, 0); // Subnet mask
+      IPAddress local_IP(192, 168, 4, 1); // Adresse IP statique pour le point d'accès WiFi
+      IPAddress gateway(192, 168, 4, 1);  // Adresse IP de passerelle par défaut
+      IPAddress subnet(255, 255, 255, 0); // Masque de sous-réseau
 
       WiFiServer server(80);
 
-      // Function prototypes
+      // Prototypes de fonctions
       void WifiConnection(void);
       void WiFireceive(void);
 #endif
       
-#define LED_TEMOIN 2 // Indicates the connectivity status
-#define enA 15 // Enable1 L298 Pin enA 
-#define in1 4  // Motor1  L298 Pin in1 
-#define in2 16 // Motor1  L298 Pin in1 
-#define in3 17 // Motor2  L298 Pin in1 
-#define in4 5  // Motor2  L298 Pin in1 
-#define enB 18 // Enable2 L298 Pin enB
+#define LED_TEMOIN 2 // Indique l'état de connectivité
+#define enA 15 // Broche de commande L298 enA 
+#define in1 4  // Broche de moteur L298 in1 
+#define in2 16 // Broche de moteur L298 in2 
+#define in3 17 // Broche de moteur L298 in3 
+#define in4 5  // Broche de moteur L298 in4 
+#define enB 18 // Broche de commande L298 enB
 #define R_S 32 // Capteur IR droit
 #define L_S 33 // Capteur IR gauche 
 
-// PWM Parameter
-#define FREQ        1000 // Channel frequency in Hz
-#define CHANNEL     0    // Channel number used
+// Paramètre PWM
+#define FREQ        1000 // Fréquence du canal en Hz
+#define CHANNEL     0    // Numéro de canal utilisé
 #define RESOLUTION  8    // 8 bits (0 - 255)
 
-int Speed = 100; // The motor speed ranges from 0 to 255.  
-int recv_data;   // variable to receive data 
+int Speed = 100; // La vitesse du moteur varie de 0 à 255.  
+int recv_data;   // Variable pour recevoir les données 
 int mode  = 0;
 
-// Function prototypes
+// Prototypes de fonctions
+void select_mode(void);
 void forword(void);
 void backword(void);
 void turnRight(void);
@@ -83,90 +83,91 @@ void Stop(void);
 
 void setup(){
       Serial.begin(115200);
-      Serial.println("using serial monitor");
+      Serial.println("utilisation du moniteur série");
 
-      // Configuration of the Grove I2C LCD screen
+      // Configuration de l'écran LCD I2C Grove
       lcd.begin(16, 2);
       lcd.setRGB(colorR, colorG, colorB);
  
-      // Pin configuration
-      pinMode(R_S, INPUT);  // Declare ir sensor as input  
-      pinMode(L_S, INPUT);  // Declare ir sensor as input
-      pinMode(enA, OUTPUT); // Declare as output for L298 Pin enA 
-      pinMode(in1, OUTPUT); // Declare as output for L298 Pin in1 
-      pinMode(in2, OUTPUT); // Declare as output for L298 Pin in2 
-      pinMode(in3, OUTPUT); // Declare as output for L298 Pin in3   
-      pinMode(in4, OUTPUT); // Declare as output for L298 Pin in4 
-      pinMode(enB, OUTPUT); // Declare as output for L298 Pin enB 
+      // Configuration des broches
+      pinMode(R_S, INPUT);  // Déclarer le capteur IR comme entrée  
+      pinMode(L_S, INPUT);  // Déclarer le capteur IR comme entrée
+      pinMode(enA, OUTPUT); // Déclarer la broche de commande L298 enA comme sortie
+      pinMode(in1, OUTPUT); // Déclarer la broche de moteur L298 in1 comme sortie
+      pinMode(in2, OUTPUT); // Déclarer la broche de moteur L298 in2 comme sortie
+      pinMode(in3, OUTPUT); // Déclarer la broche de moteur L298 in3 comme sortie   
+      pinMode(in4, OUTPUT); // Déclarer la broche de moteur L298 in4 comme sortie 
+      pinMode(enB, OUTPUT); // Déclarer la broche de commande L298 enB comme sortie 
 
       #ifdef ESP32
             #if WIFI == false
-                  bluetooth.begin("MY_CAR"); // Bluetooth name
+                  bluetooth.begin("MY_CAR"); // Nom Bluetooth
             #else
-                  WifiConnection();   // WiFi connection
+                  WifiConnection();   // Connexion WiFi
             #endif
             pinMode(LED_TEMOIN, OUTPUT); 
-            // PWM Channel Initialization
-            // It's possible to connect multiple pins to the same PWM channel on the ESP32.
-            ledcSetup(CHANNEL, FREQ, RESOLUTION); // Configure the PWM channel
-            ledcWrite(CHANNEL, Speed);   // Set the output signal of the channel
-            ledcAttachPin(enA, CHANNEL); // Attach the pin to the PWM channel
-            ledcAttachPin(enB, CHANNEL); // Attach the pin to the PWM channel
+            // Initialisation du canal PWM
+            // Il est possible de connecter plusieurs broches au même canal PWM sur l'ESP32.
+            ledcSetup(CHANNEL, FREQ, RESOLUTION); // Configurer le canal PWM
+            ledcWrite(CHANNEL, Speed);   // Définir le signal de sortie du canal
+            ledcAttachPin(enA, CHANNEL); // Attacher la broche au canal PWM
+            ledcAttachPin(enB, CHANNEL); // Attacher la broche au canal PWM
       #endif
 }
 
 void loop(){  
       #if WIFI == false
             if(bluetooth.connected()==true){
-                  digitalWrite(LED_TEMOIN,HIGH); // States on
+                  digitalWrite(LED_TEMOIN,HIGH); // État allumé
                   bt_receive();
             }
             else{
-                  digitalWrite(LED_TEMOIN,LOW); // States off
+                  digitalWrite(LED_TEMOIN,LOW); // État éteint
             }
                         
-            ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
+            ledcWrite(CHANNEL, Speed);// Définir le signal de sortie du canal
       #else
             WiFireceive();
-            ledcWrite(CHANNEL, Speed);// Set the output signal of the channel
+            ledcWrite(CHANNEL, Speed);// Définir le signal de sortie du canal
       #endif
 
       if(mode==0){     
             //===============================================================================
-            //                          Key Control Command
-            //=============================================================================== 
-            
+            //                          Commande de contrôle manuel
+            //===============================================================================
+                  
             lcd.setCursor(0, 1);   
             lcd.print("Commande Manuel ");
             lcd.setCursor(0, 1);
 
-            if(recv_data == 1){forword(); lcd.print("     AVANCE     ");}  // if the recv_data is '1' the DC motor will go forward/Avant
-            else if(recv_data == 2){backword(); lcd.print("     ARRIERE    ");}  // if the recv_data is '2' the motor will Reverse/Aeeière
-            else if(recv_data == 3){turnLeft(); lcd.print("TOURNER A GAUCHE");}  // if the recv_data is '3' the motor will turn left/Gauche
-            else if(recv_data == 4){turnRight();lcd.print("TOURNER A DROITE");} // if the recv_data is '4' the motor will turn right/Droite
-            else if(recv_data == 5){Stop(); lcd.print("      STOP      ");}     // if the recv_data '5' the motor will Stop/Stop
-      }
-      else{    
+            if(recv_data == 1){forword(); lcd.print("     AVANCE     ");}       // si recv_data est '1', le moteur DC avancera
+            else if(recv_data == 2){backword(); lcd.print("     ARRIERE    ");} // si recv_data est '2', le moteur reculera
+            else if(recv_data == 3){turnLeft(); lcd.print("TOURNER A GAUCHE");} // si recv_data est '3', le moteur tournera à gauche
+            else if(recv_data == 4){turnRight();lcd.print("TOURNER A DROITE");} // si recv_data est '4', le moteur tournera à droite
+            else if(recv_data == 5){Stop(); lcd.print("      STOP      ");}     // si recv_data est '5', le moteur s'arrêtera
+            }
+            else{    
             //===============================================================================
-            //                          Line Follower Control/Suivi de ligne
+            //                          Contrôle du Suiveur de Ligne
             //===============================================================================   
-            
+
             lcd.setCursor(0, 1);   
             lcd.print(" SUIVRE LA LIGNE ");
             lcd.setCursor(0, 1);   
             lcd.print("VITESSE : "+String(Speed)+"         ");
 
-            //if Right Sensor and Left Sensor are at White color then it will call forword function  
+            // si le capteur droit et le capteur gauche sont blancs, on appelle la fonction forword
             if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 0)){forword();} 
-            //if Right Sensor is Black and Left Sensor is White then it will call turn Right function  
+            // si le capteur droit est noir et le capteur gauche est blanc, on appelle la fonction turn Right
             if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 0)){turnRight();} 
-            //if Right Sensor is White and Left Sensor is Black then it will call turn Left function
+            // si le capteur droit est blanc et le capteur gauche est noir, on appelle la fonction turn Left
             if((digitalRead(R_S) == 0)&&(digitalRead(L_S) == 1)){turnLeft();} 
-            //if Right Sensor and Left Sensor are at Black color then it will call Stop function
+            // si le capteur droit et le capteur gauche sont noirs, on appelle la fonction Stop
             if((digitalRead(R_S) == 1)&&(digitalRead(L_S) == 1)){Stop();}     
-      } 
-      delay(10);
+            } 
+            delay(10);
 }
+
 
 #if WIFI == false
       void bt_receive(void){
@@ -214,52 +215,52 @@ void loop(){
 #endif
 
 void select_mode(void){
-      // Auto Line Follower Command
+      // Commande de suivi de ligne automatique
       if(recv_data == 8){
-            Serial.println("Auto Line Follower Command");
+            Serial.println("Commande de suivi de ligne automatique");
             mode=1; 
             Speed=130;
       }   
 
-      //Manual Android Application Control Command
+      // Commande de contrôle manuel via l'application Android
       else if(recv_data == 9){
-            Serial.println("Manual Android Application Control Command");
+            Serial.println("Commande de contrôle manuel via l'application Android");
             mode=0; 
             Stop();
       } 
 }
 
-void forword(void){  //forword
-      digitalWrite(in1, HIGH); //Right Motor forword Pin 
-      digitalWrite(in2, LOW);  //Right Motor backword Pin 
-      digitalWrite(in3, LOW);  //Left Motor backword Pin 
-      digitalWrite(in4, HIGH); //Left Motor forword Pin 
+void forword(void){  //avancer
+      digitalWrite(in1, HIGH); //Broche pour avancer du moteur droit
+      digitalWrite(in2, LOW);  //Broche pour reculer du moteur droit
+      digitalWrite(in3, LOW);  //Broche pour reculer du moteur gauche
+      digitalWrite(in4, HIGH); //Broche pour avancer du moteur gauche
 }
 
-void backword(void){ //backword
-      digitalWrite(in1, LOW);  //Right Motor forword Pin 
-      digitalWrite(in2, HIGH); //Right Motor backword Pin 
-      digitalWrite(in3, HIGH); //Left Motor backword Pin 
-      digitalWrite(in4, LOW);  //Left Motor forword Pin 
+void backword(void){ //reculer
+      digitalWrite(in1, LOW);  //Broche pour avancer du moteur droit
+      digitalWrite(in2, HIGH); //Broche pour reculer du moteur droit
+      digitalWrite(in3, HIGH); //Broche pour reculer du moteur gauche
+      digitalWrite(in4, LOW);  //Broche pour avancer du moteur gauche
 }
 
-void turnRight(void){ //turnRight
-      digitalWrite(in1, LOW);  //Right Motor forword Pin 
-      digitalWrite(in2, LOW);  //Right Motor backword Pin   
-      digitalWrite(in3, LOW);  //Left Motor backword Pin 
-      digitalWrite(in4, HIGH); //Left Motor forword Pin 
+void turnRight(void){ //tourner à droite
+      digitalWrite(in1, LOW);  //Broche pour avancer du moteur droit
+      digitalWrite(in2, LOW);  //Broche pour reculer du moteur droit   
+      digitalWrite(in3, LOW);  //Broche pour reculer du moteur gauche
+      digitalWrite(in4, HIGH); //Broche pour avancer du moteur gauche
 }
 
-void turnLeft(void){ //turnLeft
-      digitalWrite(in1, HIGH);//Right Motor forword Pin 
-      digitalWrite(in2, LOW); //Right Motor backword Pin 
-      digitalWrite(in3, LOW); //Left Motor backword Pin 
-      digitalWrite(in4, LOW); //Left Motor forword Pin  
+void turnLeft(void){ //tourner à gauche
+      digitalWrite(in1, HIGH);//Broche pour avancer du moteur droit
+      digitalWrite(in2, LOW); //Broche pour reculer du moteur droit
+      digitalWrite(in3, LOW); //Broche pour reculer du moteur gauche
+      digitalWrite(in4, LOW); //Broche pour avancer du moteur gauche  
 }
 
-void Stop(void){ //stop
-      digitalWrite(in1, LOW); //Right Motor forword Pin 
-      digitalWrite(in2, LOW); //Right Motor backword Pin 
-      digitalWrite(in3, LOW); //Left Motor backword Pin 
-      digitalWrite(in4, LOW); //Left Motor forword Pin 
+void Stop(void){ //arrêter
+      digitalWrite(in1, LOW); //Broche pour avancer du moteur droit
+      digitalWrite(in2, LOW); //Broche pour reculer du moteur droit
+      digitalWrite(in3, LOW); //Broche pour reculer du moteur gauche
+      digitalWrite(in4, LOW); //Broche pour avancer du moteur gauche
 }
