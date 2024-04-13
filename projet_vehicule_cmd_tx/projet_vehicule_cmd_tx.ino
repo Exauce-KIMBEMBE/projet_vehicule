@@ -93,21 +93,17 @@ void setup() {
   pinMode(LED_S, OUTPUT);
   pinMode(BTN_AUTO, INPUT_PULLUP);
   pinMode(BTN_MANUEL, INPUT_PULLUP);
-
+  
+  digitalWrite(LED_S, LOW);
+  
   // Connecting to the WiFi network with the specified MAC address
   Serial.println("Connecting to the WiFi network...");
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid,password); 
-
-  long init_t = millis();
-  bool etat = false;
   
   while (WiFi.status() != WL_CONNECTED) {
-    if ((millis()-init_t) >= 500){
       Serial.print(".");
-      etat = not etat;
-      digitalWrite(LED_S, etat);
-      init_t = millis();
+      delay(500);
     }
   }
 
