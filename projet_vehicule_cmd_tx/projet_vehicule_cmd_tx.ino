@@ -105,7 +105,6 @@ void setup() {
       Serial.print(".");
       delay(500);
     }
-  }
 
   Serial.println("Connected");
   digitalWrite(LED_S, HIGH);
