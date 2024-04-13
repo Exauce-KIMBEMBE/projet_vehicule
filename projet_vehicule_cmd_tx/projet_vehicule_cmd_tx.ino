@@ -26,7 +26,7 @@
 #include <LiquidCrystal_I2C.h>
 
 // Pins used for the joystick
-#define RX   32 // Control the movements according to RX
+#define RX   32 // Control the movements according to RX (FORWARD AND BACKWARD)
 #define RY   33 // Control the movements according to RY
 // Pins used by the LED to indicate the direction of the car
 #define LED_R 13  // Indicates right turn
