@@ -166,8 +166,8 @@ void loop() {
 
 
 void sendData(void){
-  int rx_value = map(analogRead(RX),0,4096,0,100); // Avance
-  int ry_value = map(analogRead(RY),0,4096,0,100); // Virage
+  int rx_value = map(analogRead(RX),0,4095,0,100); // Avance
+  int ry_value = map(analogRead(RY),0,4095,0,100); // Virage
 
   // STOP
   if((rx_value >=(DEFAULT-IT) and rx_value <= (DEFAULT+IT)) and (ry_value >= (DEFAULT-IT) and ry_value <= (DEFAULT+IT))){
