@@ -24,7 +24,11 @@
 #endif
 
 #include <WiFi.h>
-#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <rgb_lcd.h>
+
+#define nbreLigne    2  // Nombre des lignes de l'écran lcd
+#define nbreColonne  16 // Nombre des colonnes de l'écran lcd
 
 // Broches utilisées pour le joystick
 #define RX   32 // Contrôle les mouvements selon RX (AVANT ET ARRIÈRE)
@@ -52,22 +56,29 @@
 #define AUTO_MODE   8  // Suiveur ligne
 #define MANUEL_MODE 9  // Commande manuel
 
-// Messages à afficher sur l'écran lcd
-#define MSG_MODE_1  "  Control mode  "
-#define MSG_MODE_2  " Line follower  "
-#define MSG_S       "      STOP      "
-#define MSG_F       "    FORWARD     "
-#define MSG_B       "    BACKWARD    "
-#define MSG_L       "   TURN LEFT    "
-#define MSG_R       "   TURN RIGHT   "
+// Messages à afficher sur l'écran lcd I2C grove (maximums 16 caractère y compris les espaces)
+const char MSG_ACCEUIL_1[nbreColonne+1]      = "VEUILLEZ CHOISIR";
+const char MSG_ACCEUIL_2[nbreColonne+1]      = "MODE DE CONTROLE";
+const char MSG_MANUEL[nbreColonne+1]         = "COMMANDE MANUEL ";
+const char MSG_AUTO_1[nbreColonne+1]         = " ROBOT SUIVEUR  ";
+const char MSG_AUTO_2[nbreColonne+1]         = " SUIVI DE LIGNE ";
+const char MSG_AVANCE[nbreColonne+1]         = "     AVANCE     ";
+const char MSG_ARRIERE[nbreColonne+1]        = "     ARRIERE    ";
+const char MSG_GAUCHE[nbreColonne+1]         = "TOURNER A GAUCHE";
+const char MSG_DROITE[nbreColonne+1]         = "TOURNER A DROITE";
+const char MSG_STOP  [nbreColonne+1]         = "      STOP      ";
+const char MSG_ERROR_WIFI_1[nbreColonne+1]   = " CONNEXION WIFI ";
+const char MSG_ERROR_WIFI_2[nbreColonne+1]   = "     PERDUE     ";
+const char MSG_ERROR_SERVER_1[nbreColonne+1] = "ERREUR TRANSFERT";
+const char MSG_ERROR_SERVER_2[nbreColonne+1] = "   DES DONNEES  ";
 
 const char* ssid     = "WIFI_CAR";        // Nom du WIFI
 const char* password = "MON_PROJET_2024"; // Mot de passe WIFI
 const int serverPort = 80; // Port du serveur
 
 // Déclaration des objets
+rgb_lcd lcd; // creation de la classe LCD
 WiFiClient client; // Client WiFi pour la communication avec le serveur
-LiquidCrystal_I2C lcd(0x3E,16,2); // Objet LCD pour l'affichage sur l'écran LCD
 IPAddress serverIP(192, 168, 4, 1); // Adresse IP du serveur
 
 // prototypes des fonctions
@@ -78,14 +89,10 @@ void sendData(void);
 void setup() {
   Serial.begin(115200); // Démarre la communication série à une vitesse de 115200 bauds
 
-  // Configuration de l'écran LCD
-  lcd.init(); // Initialise l'écran LCD
-  lcd.backlight(); // Active le rétroéclairage de l'écran LCD
-  lcd.clear(); // Efface le contenu de l'écran LCD
-  lcd.setCursor(0,0); // Positionne le curseur de l'écran LCD à la première ligne
-  lcd.print(MSG_MODE_1); // Affiche un message sur la première ligne de l'écran LCD
-  lcd.setCursor(0,1); // Positionne le curseur de l'écran LCD à la deuxième ligne
-  lcd.print(MSG_S); // Affiche un message sur la deuxième ligne de l'écran LCD
+  // Configuration de l'écran LCD I2C Grove
+  Wire.begin(); // Initialisation de la communication I2C pour l'ecran LCD I2C grove
+  lcd.begin(nbreColonne, nbreLigne);// taille de lecran ; nombre collonnes = 16 et nombre de ligne = 2
+  affichage_lcd(MSG_ACCEUIL_1, MSG_ACCEUIL_2); // Affichage du message sur les deux lignes de l'écran 
 
   // Configuration des broches
   pinMode(RX,INPUT); // Configure la broche RX en entrée pour le joystick
@@ -115,55 +122,41 @@ void setup() {
 }
 
 
-
 void loop() {
   
   if (WiFi.status() == WL_CONNECTED) { // Vérifie si la connexion WiFi est établie
 
     if (client.connect(serverIP, serverPort)){ // Si la connexion avec le serveur est établie
-
       // Activation du mode manuel
       if (not digitalRead(BTN_MANUEL)==true){
-        
         client.println(MANUEL_MODE); // Envoie la commande de mode manuel au serveur
         client.stop(); // Arrête la connexion client
-        Serial.println(MANUEL_MODE); // Affiche un message sur le moniteur série
-
-        lcd.setCursor(0,0); // Positionne le curseur de l'écran LCD à la première ligne
-        lcd.print(MSG_MODE_1); // Affiche un message sur la première ligne de l'écran LCD
-        
+        affichage_lcd(MSG_AUTO_1, MSG_AUTO_2); // Affichage du message sur les deux lignes de l'écran        
         delay(100); // Attend 100 millisecondes
         return; // Sort de la fonction loop()
       }
       // Activation du mode suiveur de ligne
       else if (not digitalRead(BTN_AUTO)==true){
-        
         client.println(AUTO_MODE); // Envoie la commande de mode suiveur de ligne au serveur
         client.stop(); // Arrête la connexion client
         Serial.println(MANUEL_MODE); // Affiche "MANUEL_MODE" sur le moniteur série
-        
-        lcd.setCursor(0,0); // Positionne le curseur de l'écran LCD à la première ligne
-        lcd.print(MSG_MODE_2); // Affiche un message sur la première ligne de l'écran LCD
-        lcd.setCursor(0,1); // Positionne le curseur de l'écran LCD à la deuxième ligne
-        lcd.print("                "); // Efface le contenu de la deuxième ligne de l'écran LCD
-
+        affichage_lcd(MSG_MANUEL, MSG_STOP); // Affichage du message sur les deux lignes de l'écran
         delay(100); // Attend 100 millisecondes
         return; // Sort de la fonction loop()
       }
       else{ // Transmission des données du joystick
-        lcd.setCursor(0,1); // Positionne le curseur de l'écran LCD à la deuxième ligne
         sendData(); // Appelle la fonction pour envoyer les données de contrôle au serveur
         client.stop(); // Arrête la connexion client
       }
     } 
-    else {
-      Serial.println("Impossible de se connecter au serveur"); // Affiche un message d'erreur sur le moniteur série
+    else {// Affiche un message d'erreur si la connexion au serveur a échoué
+      affichage_lcd(MSG_ERROR_SERVER_1, MSG_ERROR_SERVER_2); // Affichage du message sur les deux lignes de l'écran
     }
 
     delay(10); // Attend 10 millisecondes
   } 
-  else {
-    Serial.println("Connexion WiFi perdue, réessayer..."); // Affiche un message sur le moniteur série
+  else {// Affiche un message d'erreur si la connexion wifi est perdue
+    affichage_lcd(MSG_ERROR_WIFI_1, MSG_ERROR_WIFI_2); // Affichage du message sur les deux lignes de l'écran
     digitalWrite(LED_S, LOW); // Éteint la LED indiquant l'état du WiFi
     delay(3000); // Attend 3 secondes
     ESP.restart(); // Redémarre le module ESP32
@@ -178,41 +171,36 @@ void sendData(void){
   // ARRÊT
   if((rx_value >=(DEFAULT-IT) and rx_value <= (DEFAULT+IT)) and (ry_value >= (DEFAULT-IT) and ry_value <= (DEFAULT+IT))){
     client.println(STOP); // Envoie la commande d'arrêt au serveur
-    lcd.print(MSG_S); // Affiche un message sur l'écran LCD
+    affichage_lcd(MSG_MANUEL, MSG_STOP); // Affichage du message sur les deux lignes de l'écran
     ledOff(); // Éteint toutes les LEDs
-    Serial.println(STOP); // Affiche un message sur le moniteur série
   }
   // AVANT
   else if(rx_value > (DEFAULT+IT)){
     client.println(FORWARD); // Envoie la commande d'avancer au serveur
-    lcd.print(MSG_F); // Affiche un message sur l'écran LCD
+    affichage_lcd(MSG_MANUEL, MSG_AVANCE); // Affichage du message sur les deux lignes de l'écran 
     ledOff(); // Éteint toutes les LEDs
     digitalWrite(LED_F,HIGH); // Allume la LED correspondante au mouvement vers l'avant
-    Serial.println(FORWARD); // Affiche un message sur le moniteur série
   }
   // ARRIÈRE
   else if(rx_value < (DEFAULT-IT)){
     client.println(BACKWARD); // Envoie la commande de reculer au serveur
-    lcd.print(MSG_B); // Affiche un message sur l'écran LCD
+    affichage_lcd(MSG_MANUEL, MSG_ARRIERE); // Affichage du message sur les deux lignes de l'écran
     ledOff(); // Éteint toutes les LEDs
     digitalWrite(LED_B,HIGH); // Allume la LED correspondante au mouvement vers l'arrière
-    Serial.println(BACKWARD); // Affiche un message sur le moniteur série
   }
   // GAUCHE
   else if(ry_value < (DEFAULT-IT)){
     client.println(LEFT); // Envoie la commande de tourner à gauche au serveur
-    lcd.print(MSG_L); // Affiche un message sur l'écran LCD
+    affichage_lcd(MSG_MANUEL, MSG_GAUCHE); // Affichage du message sur les deux lignes de l'écran 
     ledOff(); // Éteint toutes les LEDs
     digitalWrite(LED_L,HIGH); // Allume la LED correspondante au virage à gauche
-    Serial.println(LEFT); // Affiche un message sur le moniteur série
   }
   // DROITE
   else if(ry_value > (DEFAULT+IT)){
     client.println(RIGHT); // Envoie la commande de tourner à droite au serveur
-    lcd.print(MSG_R); // Affiche un message sur l'écran LCD
+    affichage_lcd(MSG_MANUEL, MSG_DROITE); // Affichage du message sur les deux lignes de l'écran
     ledOff(); // Éteint toutes les LEDs
     digitalWrite(LED_R,HIGH); // Allume la LED correspondante au virage à droite
-    Serial.println(RIGHT); // Affiche un message sur le moniteur série
   }
 }
 
@@ -223,4 +211,22 @@ void ledOff(void){
   digitalWrite(LED_L,LOW);
   digitalWrite(LED_R,LOW);
   delay(2);
+}
+
+/**
+ * Permet d'afficher le message sur l'écran lcd I2C grove
+ * paramètres :
+ *    char texte_1[] : tableau contenant le message a afficher sur la ligne 1
+ *    char texte_2[] : tableau contenant le message a afficher sur la ligne 2
+*/
+void affichage_lcd(const char texte_1[], const char texte_2[]){
+      for (int i = 0; i <= 1; i++) { // Permet de choisir le message a afficher sur la ligne
+            for (int ligne = 0; ligne < nbreLigne; ligne++) { // Parcour de la ligne
+                  for (int col = 0; col < nbreColonne; col++) { // Parcour de la colonne
+                        lcd.setCursor(col, ligne); // Positionnement du curseur
+                        if(i==0 and ligne == 0)lcd.write(texte_1[col]); // Affichage du message ligne 1
+                        else if(i==1 and ligne == 1)lcd.write(texte_2[col]); // Affichage du message ligne 2
+                  }
+            }
+      }
 }
